@@ -55,3 +55,39 @@ config — it does not change application code.
   recommended for a first contribution). I chose it deliberately because the
   blast radius is small (CI-only, no app code) even though the devops surface
   is more advanced.
+
+---
+
+## Week 8 — Reproduction & solution planning
+
+**Reproduction commit link:** https://github.com/BengalPirate/pathreview/commit/ec61a72a516002736e921453a3950250d8cf101e
+
+**Reproduction summary:**
+I ran the exact scans the missing CI job would run, directly against the current
+checkout. `pip-audit` on the installed Python environment exits non-zero with
+**39 vulnerable packages / 188 advisories** (e.g. `tornado`, `urllib3`,
+`transformers`, `pillow`, `cryptography`), and `npm audit --audit-level=high` in
+`frontend/` exits non-zero with **11 vulnerabilities (1 critical, 4 high)** —
+including `ws` and `react-router`. Meanwhile `.github/workflows/ci.yml` has only
+`lint`, `typecheck`, `test-unit`, `test-integration`, and `frontend` jobs, none
+of which inspect dependencies. This proves the gap: a package with a published
+CVE passes CI today.
+
+**Reproduction steps:**
+1. `cd frontend && npm audit --audit-level=high` → exit 1 (1 critical, 4 high).
+2. `pip install pip-audit && pip-audit` from the repo root → exit 1
+   (39 packages, 188 advisories).
+3. Inspect `.github/workflows/ci.yml` → confirm no `pip-audit` / `npm audit`
+   step exists in any job.
+
+**PLAN.md link:** https://github.com/BengalPirate/pathreview/blob/feat/128-dependency-vulnerability-scan/PLAN.md
+
+**Walkthrough video (recommended):** _(optional — to record via Loom)_
+
+**Blockers or open questions:**
+The main open question is the day-one baseline: the repo already carries
+pre-existing high/critical advisories, so a strict scan would fail the build
+immediately. I need to confirm with the issue author whether to upgrade the
+fixable packages, use a documented allow-list of existing advisory IDs, or set a
+severity threshold. My default plan is an allow-list for existing advisories
+that still gates strictly on *newly introduced* high/critical ones.
