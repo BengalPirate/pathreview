@@ -60,7 +60,7 @@ config — it does not change application code.
 
 ## Week 8 — Reproduction & solution planning
 
-**Reproduction commit link:** https://github.com/BengalPirate/pathreview/commit/ec61a72a516002736e921453a3950250d8cf101e
+**Reproduction commit link:** https://github.com/BengalPirate/pathreview/commit/74908f8
 
 **Reproduction summary:**
 I ran the exact scans the missing CI job would run, directly against the current
