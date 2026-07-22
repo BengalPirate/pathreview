@@ -76,6 +76,18 @@ No application code (Python or React) changes.
 - **Pre-existing advisories fail day one.** Reproduced: both ecosystems already
   have high/critical findings. Need author sign-off on allow-list vs. upgrade
   vs. threshold before this can merge green. *(Primary open question.)*
+- **The frontend fix is a breaking upgrade, not a patch.** The critical finding
+  is a CVSS 9.8 RCE in `vitest@1.6.1` (GHSA-5xrq-8626-4rwp — arbitrary file
+  read/execute while the Vitest UI server is listening). Remediating it (and the
+  related `vite`/`vite-node`/`esbuild` highs) is *not* a clean `npm audit fix`:
+  the dry run pulls in `vite@8`, a major version bump (46 packages added, 30
+  changed) that can break the frontend build and tests. So "just upgrade" is
+  itself a scoped task — the deps must be bumped deliberately and the frontend
+  test suite re-run, not force-fixed. This is a concrete reason the allow-list
+  path may be preferable for the initial gate, with the vite/vitest upgrade
+  tracked as follow-up work. *(Note: the RCE is dev/test-time only — it requires
+  the Vitest UI server to be running — so it is not exploitable in headless CI
+  runs or in shipped app code.)*
 - **Noise / flakiness.** Advisory databases update continuously, so a build that
   passed yesterday can fail today when a *new* CVE is published against an
   unchanged lockfile. Allow-list + clear failure messaging mitigates confusion.
