@@ -120,7 +120,7 @@ None. Resolved the open baseline question with the baseline-snapshot approach
 
 ### Check-in 2 (end of week)
 
-**PR link:** _(to be added once the PR is opened)_
+**PR link:** https://github.com/ascherj/pathreview/pull/637
 
 **Branch:** `feat/128-dependency-vulnerability-scan`
 
