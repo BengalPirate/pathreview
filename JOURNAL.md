@@ -152,4 +152,4 @@ load/build round-tripping, and the human-readable report.
 > pre-existing-failure guidance. The new `dependency-scan` job itself is green
 > (`python scripts/dependency_audit.py` exits 0 against the committed baseline).
 
-**Draft PR feedback received from:** _(to be added — request in Slack peer-review channel)_
+**Draft PR feedback received from:** none (peer review waived by CodePath for this cohort)
