@@ -91,3 +91,65 @@ immediately. I need to confirm with the issue author whether to upgrade the
 fixable packages, use a documented allow-list of existing advisory IDs, or set a
 severity threshold. My default plan is an allow-list for existing advisories
 that still gates strictly on *newly introduced* high/critical ones.
+
+---
+
+## Week 9 — Solution building & PR submission
+
+### Check-in 1 (mid-week)
+
+**Current progress:**
+Implemented the full fix. From PLAN.md: (1) added the npm scan and (2) the Python
+scan, both wired into a new `dependency-scan` CI job; (3) resolved the day-one
+baseline question by committing a generated baseline snapshot
+(`.github/audit-baseline.json`) so the gate blocks only *newly introduced*
+advisories rather than red-walling on pre-existing ones; (4) the job runs on the
+same `pull_request`/`push` triggers as the rest of the pipeline. The gating logic
+lives in a testable `scripts/dependency_audit.py` with 21 passing unit tests.
+
+**Next steps:**
+Finish the docs note (done, in `docs/CONTRIBUTING.md`), self-review against
+CONTRIBUTING, open a draft PR for peer feedback, then finalize.
+
+**Blockers:**
+None. Resolved the open baseline question with the baseline-snapshot approach
+(an auto-generated allow-list of pre-existing advisories) instead of hand-listing
+188 advisory IDs.
+
+---
+
+### Check-in 2 (end of week)
+
+**PR link:** _(to be added once the PR is opened)_
+
+**Branch:** `feat/128-dependency-vulnerability-scan`
+
+**What you built:**
+A CI `dependency-scan` job that runs `pip-audit` (Python) and `npm audit`
+(frontend) and fails the build when a vulnerability advisory appears that is not
+already recorded in a committed baseline (`.github/audit-baseline.json`). The
+gating logic lives in `scripts/dependency_audit.py`: it parses each scanner's
+JSON, gates npm findings at `high`/`critical` (Python advisories are gated
+regardless, since pip-audit reports no severity), and diffs against the baseline
+so only *newly introduced* advisories break the build.
+
+**Tests added or updated:**
+`tests/unit/test_dependency_audit.py` — 21 unit tests covering pip-audit and npm
+audit parsing, the severity threshold, baseline diffing, the end-to-end
+evaluation (pass when baseline covers everything; fail on a new Python or new
+high/critical npm advisory; ignore new moderate npm advisories), baseline
+load/build round-tripping, and the human-readable report.
+
+**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
+
+> Note on pre-existing failures: this checkout has failures unrelated to my
+> issue. Measured with my changes stashed vs. applied, the numbers are identical
+> except for my additions: `ruff` 161 errors → 161 (my files are clean),
+> `mypy` 5 errors → 5 (my files are outside the mypy scope), and `pytest
+> tests/unit` 375 passed / 53 failed → 396 passed / 53 failed (the 53 failures
+> are unchanged; the +21 are my new passing tests). My changes introduce **no
+> new failures** — "passes" here means "no new failures," per the Week 9
+> pre-existing-failure guidance. The new `dependency-scan` job itself is green
+> (`python scripts/dependency_audit.py` exits 0 against the committed baseline).
+
+**Draft PR feedback received from:** _(to be added — request in Slack peer-review channel)_
