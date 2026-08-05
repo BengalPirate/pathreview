@@ -153,3 +153,94 @@ load/build round-tripping, and the human-readable report.
 > (`python scripts/dependency_audit.py` exits 0 against the committed baseline).
 
 **Draft PR feedback received from:** none (peer review waived by CodePath for this cohort)
+
+---
+
+## Week 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+No reviewer or maintainer feedback came in. CodePath confirmed that reviewer
+feedback is not a feature for the Summer 2026 cohort, and no comments or reviews
+were posted on PR #637 (https://github.com/ascherj/pathreview/pull/637) by the
+end of the week. The PR remains open and unreviewed.
+
+**How you responded:**
+No changes were warranted since no feedback arrived. Rather than let the branch
+go stale, I re-ran the full gate one more time to confirm the PR is still in a
+mergeable state: `python scripts/dependency_audit.py` exits 0 against the
+committed baseline, and my 21 unit tests still pass. If a maintainer does pick
+this up later, the two most likely review questions — "why a committed baseline
+instead of just failing on everything?" and "why are Python advisories gated
+regardless of severity?" — are already answered in the PR description and the
+Week 9 journal entry.
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+The hardest part wasn't the CI config — it was deciding what "correct" even
+meant given a repo that was already red. A naive `pip-audit` / `npm audit` gate
+fails on day one because the checkout ships with 188 Python advisories and 11
+npm advisories (1 critical, 4 high) that predate my change. So the real work was
+designing a gate that blocks *newly introduced* vulnerabilities without
+red-walling every unrelated PR. Landing on a committed baseline snapshot
+(`.github/audit-baseline.json`) and diffing against it took more design thought
+than the actual YAML. The second surprise was how much noise a large,
+partially-broken codebase throws at you: the checkout had 161 pre-existing
+`ruff` errors, 5 `mypy` errors, and 53 failing unit tests before I touched
+anything, so I had to carefully measure "with my changes stashed vs. applied"
+just to *prove* I introduced zero new failures. Separating my signal from the
+existing noise was harder and slower than writing the feature.
+
+**What did you learn about working in a large codebase?**
+Contributing to someone else's production code is mostly archaeology and
+restraint, not coding. On my own projects I'd have just upgraded the vulnerable
+packages — but here that would balloon the blast radius far past the issue's
+CI-only scope and risk breaking app code I don't understand. I learned to work
+*with* the existing state (baseline the known advisories) rather than try to fix
+the whole world in one PR. I also learned to mirror existing conventions instead
+of inventing my own: I wired the new `dependency-scan` job into the same
+`pull_request`/`push` triggers and dependency-install pattern (`pip install -e
+".[dev]"`) the other jobs already used, so a maintainer reads it as "one more of
+the same" rather than a foreign addition. And I learned that in a big repo,
+"passes" means "introduces no new failures," not "everything is green" — a
+distinction that doesn't exist when you own 100% of the code.
+
+**How did AI tools help — and where did they fall short?**
+AI was most useful as a fast reference for the mechanical, well-documented parts:
+the exact shape of `pip-audit` and `npm audit` JSON output, GitHub Actions job
+syntax, and scaffolding the unit tests for `scripts/dependency_audit.py`. It let
+me move quickly through the parts of the problem that were "known-answer."
+Where it fell short was the actual judgment calls — deciding that a committed
+baseline was the right pattern (vs. a hand-maintained allow-list of 188 advisory
+IDs, or a severity threshold), and figuring out that the pre-existing 53 test
+failures were unrelated to my change. Those required reading *this specific
+repo's* state and history and making a defensible engineering trade-off, which
+AI couldn't do for me because it didn't have the ground truth of what was
+already broken. AI accelerated the typing; the deciding was still mine.
+
+**What would you do differently if you started over?**
+I'd resolve the day-one baseline question earlier instead of carrying it as an
+open blocker into Week 9. I flagged it correctly in Week 8, but I spent time
+building against uncertainty before committing to the baseline-snapshot
+approach; deciding that up front would have made the implementation more direct.
+I'd also record the short Loom walkthrough I left as optional — for a CI change
+where the whole value is in the *reasoning* about scope and baselines, a
+two-minute narration would communicate the design intent far better than the
+diff alone. On issue selection, I'd make the same choice again: a Tier 3 issue
+with a small blast radius (CI-only, no app code) was a good bet.
+
+**What are you most proud of from this module?**
+That I turned a scope trap into a clean design decision. The easy version of this
+issue — "add `pip-audit` to CI" — would have produced a job that fails every PR
+on advisories nobody in this cohort introduced, and it would have been useless.
+Recognizing that the *interesting* problem was gating on the delta, and then
+building it as a testable, isolated `scripts/dependency_audit.py` with 21 unit
+tests rather than a pile of untestable shell in a YAML file, is the thing I'd
+point to. It's the difference between "made CI run a command" and "designed a
+gate the project can actually live with."
